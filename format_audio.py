@@ -1,0 +1,129 @@
+
+import json
+import shutil
+import subprocess
+import tempfile
+from pathlib import PurePosixPath
+from pathlib import Path
+
+from formatted_zone import (
+    s3, SOURCE_BUCKET, TARGET_BUCKET,
+    PERSISTENT_PREFIX, ensure_bucket,
+    list_files, target_key, exists
+)
+
+PREFIX = PERSISTENT_PREFIX + "xeno_canto/audio/"
+
+AUDIO_EXTENSIONS = {
+    ".mp3", ".wav", ".flac", ".ogg",
+    ".m4a", ".aac", ".opus"
+}
+
+
+def main():
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError(
+            "FFmpeg is not installed or not available in PATH"
+        )
+
+    ensure_bucket()
+    converted = skipped = failed = 0
+
+    for key in list_files(PREFIX):
+        extension = PurePosixPath(key).suffix.lower()
+
+        # Preserve Xeno-canto attribution and license JSON.
+        if extension == ".json":
+            destination = key[len(PERSISTENT_PREFIX):]
+
+            if exists(destination):
+                skipped += 1
+                continue
+
+            try:
+                response = s3.get_object(
+                    Bucket=SOURCE_BUCKET, Key=key
+                )
+                raw = response["Body"].read()
+
+                # Validate that it is JSON before copying.
+                json.loads(raw.decode("utf-8"))
+
+                s3.put_object(
+                    Bucket=TARGET_BUCKET,
+                    Key=destination,
+                    Body=raw,
+                    ContentType="application/json",
+                    Metadata={"original-key": key}
+                )
+
+                print("METADATA:", destination)
+                converted += 1
+
+            except Exception as error:
+                print("ERROR:", key, error)
+                failed += 1
+
+            continue
+
+        if extension not in AUDIO_EXTENSIONS:
+            continue
+
+        destination = target_key(key, ".wav")
+
+        if exists(destination):
+            skipped += 1
+            continue
+
+        try:
+            with tempfile.TemporaryDirectory() as folder:
+                input_file = Path(folder) / ("input" + extension)
+                output_file = Path(folder) / "output.wav"
+
+                s3.download_file(
+                    SOURCE_BUCKET, key, str(input_file)
+                )
+
+                subprocess.run(
+                    [
+                        "ffmpeg",
+                        "-hide_banner",
+                        "-loglevel", "error",
+                        "-y",
+                        "-i", str(input_file),
+                        "-map", "0:a:0",
+                        "-vn",
+                        "-ac", "1",
+                        "-ar", "16000",
+                        "-c:a", "pcm_s16le",
+                        str(output_file)
+                    ],
+                    check=True,
+                    timeout=600
+                )
+
+                s3.upload_file(
+                    str(output_file),
+                    TARGET_BUCKET,
+                    destination,
+                    ExtraArgs={
+                        "ContentType": "audio/wav",
+                        "Metadata": {"original-key": key}
+                    }
+                )
+
+            print("WAV:", destination)
+            converted += 1
+
+        except Exception as error:
+            print("ERROR:", key, error)
+            failed += 1
+
+    print(
+        f"\nAudio and metadata: converted={converted}, "
+        f"skipped={skipped}, failed={failed}"
+    )
+
+
+if __name__ == "__main__":
+    main()

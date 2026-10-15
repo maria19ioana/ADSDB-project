@@ -34,7 +34,7 @@ def extract_text(raw, extension):
 
         raise ValueError("No supported text field in JSON")
 
-    # TXT: support UTF-8 and common legacy encodings.
+    # check for common text encodings
     for encoding in ("utf-8-sig", "utf-16", "cp1252"):
         try:
             return raw.decode(encoding)
@@ -45,13 +45,13 @@ def extract_text(raw, extension):
 
 
 def normalize_text(text):
-    # Standardize Windows/Mac line endings.
+    # replace endlines with \n
     text = text.replace("\r\n", "\n").replace("\r", "\n")
 
-    # Remove trailing whitespace, preserving line structure.
+    # ensure that each line is stripped of trailing whitespace
     lines = [line.rstrip() for line in text.split("\n")]
 
-    # Remove excess blank lines.
+    # remove any extra blank lines at the start and end of the text
     result = "\n".join(lines)
     result = re.sub(r"\n{3,}", "\n\n", result)
 
@@ -65,7 +65,7 @@ def main():
     for key in list_files(PREFIX):
         extension = PurePosixPath(key).suffix.lower()
 
-        if extension not in (".txt", ".json"):
+        if extension not in (".txt", ".json", ".csv", ".md", ".log"):
             continue
 
         destination = target_key(key, ".txt")

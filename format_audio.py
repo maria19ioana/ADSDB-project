@@ -23,7 +23,7 @@ AUDIO_EXTENSIONS = {
 def main():
     if not shutil.which("ffmpeg"):
         raise RuntimeError(
-            "FFmpeg is not installed or not available in PATH"
+            "ffmpeg not installed"
         )
 
     ensure_bucket()
@@ -33,7 +33,7 @@ def main():
     for key in keys:
         extension = PurePosixPath(key).suffix.lower()
 
-        # Preserve Xeno-canto attribution and license JSON.
+        # keep metadata JSON files in the Formatted Zone, and convert audio files to WAV
         if extension == ".json":
             destination = key[len(PERSISTENT_PREFIX):]
 
@@ -43,6 +43,7 @@ def main():
                 )
                 raw = response["Body"].read()
 
+                # check that the JSON is valid before uploading
                 metadata = json.loads(raw.decode("utf-8"))
                 audio_key = str(PurePosixPath(destination).with_suffix(".wav"))
                 if not exists(audio_key):

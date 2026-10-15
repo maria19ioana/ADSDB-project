@@ -1,4 +1,3 @@
-
 import csv
 import hashlib
 from collections import Counter
@@ -10,20 +9,21 @@ from PIL import Image, ImageOps
 from trusted_zone import (
     s3,
     SOURCE_BUCKET,
+    TARGET_BUCKET,
     ensure_bucket,
     list_files,
     exists,
-    copy_to_trusted,
     species_from_key
 )
 
 PREFIX = "huggingface_cub200/images/"
 REPORT_DIR = Path("quality_reports")
 REPORT_DIR.mkdir(exist_ok=True)
+TARGET_SIZE = (256, 256)
 
 
 def inspect_image(key):
-    """Validate image and collect quality metrics."""
+    """Validate image and collect quality metrics"""
     response = s3.get_object(
         Bucket=SOURCE_BUCKET,
         Key=key
@@ -31,7 +31,7 @@ def inspect_image(key):
     data = response["Body"].read()
 
     with Image.open(BytesIO(data)) as image:
-        image.load()  # Force full decoding.
+        image.load()  
 
         if image.format != "JPEG":
             raise ValueError(
@@ -48,7 +48,7 @@ def inspect_image(key):
         if width <= 0 or height <= 0:
             raise ValueError("Invalid image dimensions")
 
-        # Hash actual decoded pixel data.
+        # hash the data to check for duplicates
         digest = hashlib.sha256()
         digest.update(width.to_bytes(8, "big"))
         digest.update(height.to_bytes(8, "big"))
@@ -109,7 +109,23 @@ def main():
                     row["status"] = "already_trusted"
                     counts["skipped"] += 1
                 else:
-                    copy_to_trusted(key)
+                    # resize and pad the image to the target size
+                    response = s3.get_object(Bucket=SOURCE_BUCKET, Key=key)
+                    raw_data = response["Body"].read()
+                    
+                    with Image.open(BytesIO(raw_data)) as img:
+                        clean_img = ImageOps.pad(img, TARGET_SIZE, color=(0, 0, 0))
+                        out_buffer = BytesIO()
+                        clean_img.save(out_buffer, format='JPEG', quality=95)
+                        
+                    s3.put_object(
+                        Bucket=TARGET_BUCKET,
+                        Key=key,
+                        Body=out_buffer.getvalue(),
+                        ContentType="image/jpeg",
+                        Metadata={"original-key": key}
+                    )
+                    
                     row["status"] = "trusted"
                     counts["trusted"] += 1
 
@@ -144,14 +160,12 @@ def main():
         writer.writeheader()
         writer.writerows(rows)
 
-    print("\n========== IMAGE QUALITY ==========")
     print("Trusted:", counts["trusted"])
     print("Already trusted:", counts["skipped"])
     print("Exact duplicates:", counts["duplicates"])
     print("Invalid:", counts["invalid"])
     print("Total inspected:", len(rows))
     print("Report:", report_path)
-    print("===================================")
 
 
 if __name__ == "__main__":

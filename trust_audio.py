@@ -30,7 +30,6 @@ EXPECTED_SAMPLE_RATE = 16000
 EXPECTED_CHANNELS = 1
 EXPECTED_SAMPLE_WIDTH = 2
 
-# These are quality warnings, not automatic exclusions.
 MIN_DURATION_SECONDS = 1.0
 SILENCE_THRESHOLD = 0.01
 MOSTLY_SILENT_RATIO = 0.90
@@ -39,7 +38,7 @@ CLIPPING_RATIO_WARNING = 0.01
 
 
 def inspect_audio(key):
-    """Validate WAV and calculate quality metrics."""
+    """Validate WAV and calculate quality metrics"""
 
     response = s3.get_object(
         Bucket=SOURCE_BUCKET,
@@ -97,23 +96,22 @@ def inspect_audio(key):
 
     duration = frame_count / sample_rate
 
-    # Root mean square amplitude.
+    # amplitude metrics
     rms = float(np.sqrt(np.mean(samples ** 2)))
 
-    # Maximum absolute amplitude.
     peak = float(np.max(np.abs(samples)))
 
-    # Fraction of samples close to zero.
+    # calculate the fraction of samples that are near zero amplitude
     silence_ratio = float(
         np.mean(np.abs(samples) < SILENCE_THRESHOLD)
     )
 
-    # Fraction of samples near the maximum digital level.
+    # calculate the fraction of samples that are at or above the clipping threshold
     clipping_ratio = float(
         np.mean(np.abs(samples) >= CLIPPING_THRESHOLD)
     )
 
-    # Exact duplicate detection using decoded PCM samples.
+    # duplicate detection
     audio_hash = hashlib.sha256(frames).hexdigest()
 
     return {
@@ -136,7 +134,7 @@ def inspect_audio(key):
 
 
 def copy_metadata(audio_key, available_keys):
-    """Preserve the JSON attribution file for accepted audio."""
+    """Preserve the JSON attribution file for accepted audio"""
 
     json_key = str(
         Path(audio_key).with_suffix(".json")
@@ -153,7 +151,7 @@ def copy_metadata(audio_key, available_keys):
 
         metadata_bytes = response["Body"].read()
 
-        # Ensure the sidecar is valid JSON.
+        # check that the JSON is valid and can be decoded
         json.loads(metadata_bytes.decode("utf-8-sig"))
 
         copy_to_trusted(json_key)
@@ -223,13 +221,12 @@ def main():
             else:
                 seen_hashes[audio_hash] = key
 
-                # Keep valid audio unchanged.
                 copy_to_trusted(key)
 
                 row["status"] = "trusted"
                 counts["trusted"] += 1
 
-                # Preserve Xeno-canto license/attribution data.
+                # keep the JSON metadata file if it exists and is valid
                 row["metadata_status"] = copy_metadata(
                     key, keys
                 )
@@ -287,7 +284,6 @@ def main():
         writer.writeheader()
         writer.writerows(rows)
 
-    print("\n========== AUDIO QUALITY ==========")
     print("Total WAV inspected:", len(rows))
     print("Trusted:", counts["trusted"])
     print("Duplicates excluded:", counts["duplicates"])
@@ -299,7 +295,6 @@ def main():
     print("JSON metadata copied:", counts["metadata_copied"])
     print("Metadata issues:", counts["metadata_issues"])
     print("Report:", REPORT_FILE)
-    print("===================================")
 
 
 if __name__ == "__main__":

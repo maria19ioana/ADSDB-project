@@ -25,30 +25,29 @@ MIN_WORDS = 5
 
 
 def clean_text(text):
-    """Apply conservative, model-independent text cleaning."""
+    """Apply conservative, model-independent text cleaning"""
 
-    # Standardize line endings.
+    # normalize line endings
     text = text.replace("\r\n", "\n").replace("\r", "\n")
 
-    # Normalize Unicode representation.
+    # normalize unicode to NFC form
     text = unicodedata.normalize("NFC", text)
 
-    # Remove invalid control characters.
-    # Preserve newline and tab for whitespace normalization.
+    # remove control characters except for newlines and tabs
     text = "".join(
         char for char in text
         if char in ("\n", "\t")
         or unicodedata.category(char) != "Cc"
     )
 
-    # Replace tabs and repeated horizontal whitespace.
+    # replace runs of whitespace with a single space
     text = re.sub(r"[^\S\n]+", " ", text)
 
-    # Remove spaces around line boundaries.
+    # remove whitespaces from each line
     lines = [line.strip() for line in text.split("\n")]
     text = "\n".join(lines)
 
-    # Limit runs of blank lines to one empty line.
+    # check for multiple consecutive newlines and replace with two newlines
     text = re.sub(r"\n{3,}", "\n\n", text)
 
     return text.strip()
@@ -63,7 +62,6 @@ def inspect_text(key):
     )
     raw = response["Body"].read()
 
-    # Formatted Zone should contain UTF-8 text.
     original = raw.decode("utf-8-sig", errors="strict")
     cleaned = clean_text(original)
 
@@ -87,7 +85,7 @@ def main():
     counts = Counter()
     rows = []
 
-    # Deduplicate within species, not across species.
+    # deduplication check
     seen_hashes = {}
 
     keys = sorted(
@@ -146,7 +144,6 @@ def main():
                     counts["duplicates"] += 1
 
                 else:
-                    # Record the first accepted description.
                     seen_hashes[duplicate_id] = key
 
                     row["short_text"] = (
@@ -156,7 +153,7 @@ def main():
                     if row["short_text"]:
                         counts["short"] += 1
 
-                    # Write cleaned UTF-8 text to Trusted Zone.
+                    # keep clean text in Trusted Zone
                     s3.put_object(
                         Bucket=TARGET_BUCKET,
                         Key=key,
@@ -218,7 +215,6 @@ def main():
         writer.writeheader()
         writer.writerows(rows)
 
-    print("\n========== TEXT QUALITY ==========")
     print("Total inspected:", len(rows))
     print("Accepted:", counts["accepted"])
     print("Cleaned:", counts["cleaned"])
@@ -228,7 +224,6 @@ def main():
     print("Processing errors:", counts["errors"])
     print("Short texts flagged:", counts["short"])
     print("Report:", REPORT_FILE)
-    print("==================================")
 
 
 if __name__ == "__main__":

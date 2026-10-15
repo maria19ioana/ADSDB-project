@@ -17,7 +17,7 @@ from formatted_zone import (
 
 register_heif_opener()
 
-# Images in Persistent Landing
+# images from Persistent Landing
 PREFIX = PERSISTENT_PREFIX + "huggingface_cub200/images/"
 
 SUPPORTED = {
@@ -27,7 +27,7 @@ SUPPORTED = {
 
 
 def format_image(key):
-    """Convert an image to the canonical RGB JPG format."""
+    """Convert an image to RGB JPG format."""
 
     destination = target_key(key, ".jpg")
 
@@ -35,7 +35,7 @@ def format_image(key):
         print("SKIP:", destination)
         return "skipped"
 
-    # Download source image from Persistent Landing.
+    # get the original image from Persistent Landing
     response = s3.get_object(
         Bucket=SOURCE_BUCKET,
         Key=key
@@ -43,11 +43,9 @@ def format_image(key):
     original = response["Body"].read()
 
     with Image.open(BytesIO(original)) as image:
-        # Apply EXIF rotation before saving.
+        # apply EXIF orientation to the image
         image = ImageOps.exif_transpose(image)
 
-        # Existing RGB JPEGs can be copied without re-encoding,
-        # provided they have no EXIF orientation adjustment.
         orientation = image.getexif().get(274, 1)
 
         can_copy = (
@@ -72,8 +70,7 @@ def format_image(key):
             print("COPIED JPG:", destination)
             return "copied"
 
-        # Convert images that are not already compliant.
-        # Transparency is placed over a white background.
+        # convert the image to RGB and save as JPG, and replace any transparency with a white background
         if image.mode in ("RGBA", "LA") or "transparency" in image.info:
             rgba = image.convert("RGBA")
             background = Image.new("RGB", rgba.size, "white")
@@ -131,12 +128,10 @@ def main():
             print("ERROR:", key, error)
             failed += 1
 
-    print("\n========== IMAGE FORMATTING ==========")
     print("Copied JPG:", copied)
     print("Converted to JPG:", converted)
     print("Already formatted:", skipped)
     print("Failed:", failed)
-    print("======================================")
 
 
 if __name__ == "__main__":

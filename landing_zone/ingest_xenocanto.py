@@ -220,7 +220,8 @@ def upload_audio(folder, record):
         "license": record.get("lic"),
         "source_url": f"https://xeno-canto.org/{rid}",
         "original_filename": original_name,
-        "minio_audio_key": key
+        "audio_bucket": BUCKET,
+        "audio_key": key
     }
 
     s3.put_object(

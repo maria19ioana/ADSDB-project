@@ -152,9 +152,18 @@ def copy_metadata(audio_key, available_keys):
         metadata_bytes = response["Body"].read()
 
         # check that the JSON is valid and can be decoded
-        json.loads(metadata_bytes.decode("utf-8-sig"))
+        metadata = json.loads(metadata_bytes.decode("utf-8-sig"))
+        s3.head_object(Bucket=TARGET_BUCKET, Key=audio_key)
+        metadata.pop("minio_audio_key", None)
+        metadata["audio_bucket"] = TARGET_BUCKET
+        metadata["audio_key"] = audio_key
 
-        copy_to_trusted(json_key)
+        s3.put_object(
+            Bucket=TARGET_BUCKET,
+            Key=json_key,
+            Body=json.dumps(metadata, indent=2).encode("utf-8"),
+            ContentType="application/json"
+        )
 
         return "copied"
 

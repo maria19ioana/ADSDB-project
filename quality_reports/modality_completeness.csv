@@ -1,0 +1,17 @@
+species,images,texts,audio,has_images,has_texts,has_audio,modalities_present,complete
+031.Black_billed_Cuckoo,60,60,5,True,True,True,3,True
+032.Mangrove_Cuckoo,53,53,5,True,True,True,3,True
+033.Yellow_billed_Cuckoo,59,59,5,True,True,True,3,True
+034.Gray_crowned_Rosy_Finch,59,59,0,True,True,False,2,False
+035.Purple_Finch,60,60,5,True,True,True,3,True
+036.Northern_Flicker,60,60,5,True,True,True,3,True
+037.Acadian_Flycatcher,59,59,5,True,True,True,3,True
+038.Great_Crested_Flycatcher,60,60,5,True,True,True,3,True
+039.Least_Flycatcher,59,59,5,True,True,True,3,True
+040.Olive_sided_Flycatcher,60,60,5,True,True,True,3,True
+041.Scissor_tailed_Flycatcher,60,60,5,True,True,True,3,True
+042.Vermilion_Flycatcher,60,60,5,True,True,True,3,True
+043.Yellow_bellied_Flycatcher,59,59,5,True,True,True,3,True
+044.Frigatebird,60,60,0,True,True,False,2,False
+045.Northern_Fulmar,60,60,5,True,True,True,3,True
+046.Gadwall,60,60,5,True,True,True,3,True

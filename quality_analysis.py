@@ -61,11 +61,11 @@ def plot_species_coverage(images, texts, audio):
     ]["species"].value_counts()
 
     text_counts = texts[
-        texts["status"].isin(["trusted", "cleaned"])
+        texts["status"].isin(["trusted", "cleaned", "already_trusted"])
     ]["species"].value_counts()
 
     audio_counts = audio[
-        audio["status"] == "trusted"
+        audio["status"].isin(["trusted", "already_trusted"])
     ]["species"].value_counts()
 
     species = sorted(
@@ -173,7 +173,7 @@ def plot_text_quality(texts):
     """Analyze text lengths and cleaning effects."""
 
     accepted = texts[
-        texts["status"].isin(["trusted", "cleaned"])
+        texts["status"].isin(["trusted", "cleaned", "already_trusted"])
     ].copy()
 
     for column in (
@@ -222,7 +222,7 @@ def plot_audio_quality(audio):
     """Analyze duration, silence, and volume."""
 
     valid = audio[
-        audio["status"] == "trusted"
+        audio["status"].isin(["trusted", "already_trusted"])
     ].copy()
 
     for column in (
@@ -427,7 +427,7 @@ def analyze_audio_warnings(audio):
     """Investigate mostly silent recordings by species."""
 
     valid = audio.loc[
-        audio["status"] == "trusted"
+        audio["status"].isin(["trusted", "already_trusted"])
     ].copy()
 
     valid["mostly_silent_flag"] = boolean_column(
@@ -506,7 +506,16 @@ def analyze_before_after(images, texts, audio):
         errors = int((statuses == "error").sum())
 
         cleaned = (
-            int((statuses == "cleaned").sum())
+            int(
+                boolean_column(
+                    df.loc[
+                        statuses.isin(
+                            ["trusted", "cleaned", "already_trusted"]
+                        )
+                    ],
+                    "changed"
+                ).sum()
+            )
             if modality == "Text"
             else 0
         )
@@ -514,7 +523,7 @@ def analyze_before_after(images, texts, audio):
         if modality == "Audio":
             flagged = int(
                 boolean_column(
-                    df.loc[statuses == "trusted"],
+                    df.loc[statuses.isin(["trusted", "already_trusted"])],
                     "mostly_silent"
                 ).sum()
             )
@@ -522,7 +531,7 @@ def analyze_before_after(images, texts, audio):
             flagged = int(
                 boolean_column(
                     df.loc[
-                        statuses.isin(["trusted", "cleaned"])
+                        statuses.isin(["trusted", "cleaned", "already_trusted"])
                     ],
                     "short_text"
                 ).sum()
@@ -560,7 +569,7 @@ def analyze_text_changes(texts):
     """Measure exactly how much each text file changed."""
 
     accepted = texts.loc[
-        texts["status"].isin(["trusted", "cleaned"])
+        texts["status"].isin(["trusted", "cleaned", "already_trusted"])
     ].copy()
 
     accepted["original_chars"] = numeric_column(
@@ -656,16 +665,13 @@ def write_final_report(
         "",
         "## 1. Scope",
         "",
-        "The analysis evaluates image, text, and audio files "
+        "The analysis evaluates image, text and audio files "
         "processed from the Formatted Zone into the Trusted Zone.",
         "",
         "## 2. Integrity and acceptance",
         "",
         before_after.to_markdown(index=False),
-        "",
-        "All acceptance figures refer to the implemented "
-        "technical quality checks, not semantic correctness.",
-        "",
+        ""
         "## 3. Multimodal completeness",
         "",
         f"{complete_species} of {total_species} species "
@@ -683,10 +689,7 @@ def write_final_report(
         lines.append("- None")
 
     lines.extend([
-        "",
-        "The presence of all three modalities at species level "
-        "does not establish file-level multimodal pairing.",
-        "",
+        ""
         "## 4. Audio quality",
         "",
         f"{len(flagged_audio)} of "
@@ -720,17 +723,6 @@ def write_final_report(
         "",
         "- Audio is missing for some bird species.",
         "- Quiet audio may contain useful vocalizations.",
-        "- File integrity checks do not guarantee correct labels.",
-        "- Exact-duplicate checks do not detect near-duplicates.",
-        "- Species-level coverage does not prove that individual "
-        "image, text, and audio records are paired.",
-        "",
-        "## 7. Conclusion",
-        "",
-        "The Trusted Zone contains technically validated data "
-        "with documented cleaning operations and quality warnings. "
-        "Unusual but valid observations were retained rather "
-        "than removed solely for model-specific reasons.",
         ""
     ])
 
@@ -795,6 +787,3 @@ if __name__ == "__main__":
     main()
 
 
-
-if __name__ == "__main__":
-    main()

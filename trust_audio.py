@@ -16,7 +16,8 @@ from trusted_zone import (
     ensure_bucket,
     list_files,
     copy_to_trusted,
-    species_from_key
+    species_from_key,
+    exists
 )
 
 PREFIX = "xeno_canto/audio/"
@@ -143,6 +144,9 @@ def copy_metadata(audio_key, available_keys):
     if json_key not in available_keys:
         return "missing"
 
+    if exists(json_key):
+        return "already_trusted"
+
     try:
         response = s3.get_object(
             Bucket=SOURCE_BUCKET,
@@ -230,18 +234,26 @@ def main():
             else:
                 seen_hashes[audio_hash] = key
 
-                copy_to_trusted(key)
+                if exists(key):
+                    row["status"] = "already_trusted"
+                    counts["skipped"] += 1
 
-                row["status"] = "trusted"
-                counts["trusted"] += 1
+                else:
+                    copy_to_trusted(key)
 
-                # keep the JSON metadata file if it exists and is valid
+                    row["status"] = "trusted"
+                    counts["trusted"] += 1
+
+                # Check JSON metadata separately.
+                # This also handles WAV files that already existed.
                 row["metadata_status"] = copy_metadata(
                     key, keys
                 )
 
                 if row["metadata_status"] == "copied":
                     counts["metadata_copied"] += 1
+                elif row["metadata_status"] == "already_trusted":
+                    counts["metadata_skipped"] += 1
                 else:
                     counts["metadata_issues"] += 1
 
@@ -303,6 +315,8 @@ def main():
     print("Clipping flagged:", counts["clipping"])
     print("JSON metadata copied:", counts["metadata_copied"])
     print("Metadata issues:", counts["metadata_issues"])
+    print("Already trusted WAV:", counts["skipped"])
+    print("JSON metadata already trusted:", counts["metadata_skipped"])
     print("Report:", REPORT_FILE)
 
 

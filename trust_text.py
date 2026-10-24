@@ -12,7 +12,8 @@ from trusted_zone import (
     TARGET_BUCKET,
     ensure_bucket,
     list_files,
-    species_from_key
+    species_from_key,
+    exists
 )
 
 PREFIX = "huggingface_cub200/text/"
@@ -154,24 +155,26 @@ def main():
                         counts["short"] += 1
 
                     # keep clean text in Trusted Zone
-                    s3.put_object(
-                        Bucket=TARGET_BUCKET,
-                        Key=key,
-                        Body=cleaned.encode("utf-8"),
-                        ContentType="text/plain; charset=utf-8",
-                        Metadata={"original-key": key}
-                    )
+                    if exists(key):
+                        row["status"] = "already_trusted"
+                        counts["skipped"] += 1
+                    else:
+                        s3.put_object(
+                            Bucket=TARGET_BUCKET,
+                            Key=key,
+                            Body=cleaned.encode("utf-8"),
+                            ContentType="text/plain; charset=utf-8",
+                            Metadata={"original-key": key}
+                        )
 
-                    row["status"] = (
-                        "cleaned"
-                        if info["changed"]
-                        else "trusted"
-                    )
+                        row["status"] = (
+                            "cleaned" if info["changed"] else "trusted"
+                        )
 
-                    counts["accepted"] += 1
+                        counts["accepted"] += 1
 
-                    if info["changed"]:
-                        counts["cleaned"] += 1
+                        if info["changed"]:
+                            counts["cleaned"] += 1
 
             print(row["status"].upper(), key)
 
@@ -223,6 +226,7 @@ def main():
     print("Invalid UTF-8:", counts["invalid"])
     print("Processing errors:", counts["errors"])
     print("Short texts flagged:", counts["short"])
+    print("Already trusted:", counts["skipped"])
     print("Report:", REPORT_FILE)
 
 

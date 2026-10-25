@@ -4,3 +4,7 @@ __pycache__/
 *.pyc
 hf_downloads/
 .DS_Store
+exploitation_zone/chroma_data/
+YellowbelliedFlycatcher*.jpg
+parrot*.jpg
+chroma_data/

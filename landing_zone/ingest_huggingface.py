@@ -1,4 +1,3 @@
-
 import os
 import re
 import zipfile
@@ -19,8 +18,9 @@ MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
 BUCKET = "landingzone"
 DESTINATION = "temporal_landing"
 
-START_BIRD = 31
-END_BIRD = 46
+START_BIRD = 1
+END_BIRD = 100
+MAX_FILES_PER_SPECIES = 5  
 
 DOWNLOAD_DIR = Path("hf_downloads")
 
@@ -73,6 +73,7 @@ def process_archive(archive_name, destination_folder):
 
     uploaded = 0
     species_found = set()
+    species_file_count = {}  
 
     with zipfile.ZipFile(archive_path, "r") as archive:
 
@@ -87,14 +88,18 @@ def process_archive(archive_name, destination_folder):
                 continue
 
             parts = Path(member.filename).parts
+            species_name = parts[species_index]
+
+            current_count = species_file_count.get(species_name, 0)
+            if current_count >= MAX_FILES_PER_SPECIES:
+                continue
 
             relative_path = "/".join(parts[species_index:])
-
-            species_found.add(parts[species_index])
+            species_found.add(species_name)
 
             object_key = f"{DESTINATION}/{destination_folder}/{relative_path}"
 
-            print(f"Uploading: {object_key}")
+            print(f"Uploading: {object_key} ({current_count + 1}/{MAX_FILES_PER_SPECIES})")
 
             with archive.open(member) as file_data:
                 s3.upload_fileobj(
@@ -104,14 +109,15 @@ def process_archive(archive_name, destination_folder):
                 )
 
             uploaded += 1
+            species_file_count[species_name] = current_count + 1
 
     print(f"\nCompleted {archive_name}")
-    print(f"Files uploaded: {uploaded}")
+    print(f"Total files uploaded: {uploaded}")
     print(f"Species found: {len(species_found)}")
 
     if uploaded == 0:
         raise RuntimeError(
-            f"No matching files found in {archive_name}"
+            f"No matching files found in {archive_name} "
             "Check the archive's internal structure"
         )
 
@@ -123,7 +129,7 @@ image_count, image_species = process_archive("images.zip","images")
 text_count, text_species = process_archive("text.zip","text")
 
 
-print(f"Image files uploaded: {image_count}")
+print(f"\nImage files uploaded: {image_count}")
 print(f"Text files uploaded: {text_count}")
 print(f"Image species found: {len(image_species)}")
 print(f"Text species found: {len(text_species)}")

@@ -4,11 +4,10 @@ from pathlib import Path
 
 import chromadb
 
+CHROMA_PATH = Path(__file__).resolve().parent.parent / "chroma_data"
 
 def collection():
-    client = chromadb.PersistentClient(
-        path=str(Path(__file__).resolve().parent / "exploitation_chroma")
-    )
+    client = chromadb.PersistentClient(path=str(CHROMA_PATH))
     return client.get_collection("audio_yamnet", embedding_function=None)
 
 

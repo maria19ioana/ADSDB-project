@@ -6,19 +6,15 @@ import torch
 import open_clip
 import chromadb
 
-# ==========================================
-# 1. SET YOUR QUERY HERE
-# ==========================================
-#QUERY_TYPE = "text"   # Options: "text", "image", "audio"
-#QUERY_VALUE = "small bird with black spots, long beak, and colored eyebrows"  # For text, you can also provide a .txt file path
 
-# Examples for other modalities:
+#QUERY_TYPE = "text"   # Options: "text", "image", "audio"
+#QUERY_VALUE = "small bird with black spots, long beak, and colored eyebrows"  
+
 QUERY_TYPE = "image"
-QUERY_VALUE = "C:\\Users\\ivani\\Desktop\\UPC\\ADSDB\\ADSDB-project-main-YAMNET\\flicker.jpg"  
-#
+QUERY_VALUE = "C:\\Users\\ivani\\Desktop\\UPC\\ADSDB\\ADSDB-fresh-clone\\flicker.jpg"  
+
 #QUERY_TYPE = "audio"
 #QUERY_VALUE = "C:\\Users\\ivani\\Desktop\\UPC\\ADSDB\\ADSDB-project-main-YAMNET\\XC975331 - Northern Flicker - Colaptes auratus.wav"
-# ==========================================
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent
 DB_PATH = PROJECT_DIR / "chroma_data"
@@ -27,11 +23,11 @@ MODEL_NAME = "ViT-L-14"
 PRETRAINED = "laion2b_s32b_b82k"
 
 
-def get_audio_mapper(client):
-    """Dynamically trains the W matrix to project Audio into CLIP space."""
+def get_perch_audio_mapper(client):
+    """Dynamically trains the W matrix to project Perch Audio into CLIP space."""
     from sklearn.linear_model import Ridge
     
-    audio_db = client.get_collection("audio_yamnet")
+    audio_db = client.get_collection("bird_audio_perch")
     mm_db = client.get_collection(MULTIMODAL_COLLECTION)
     
     audio_data = audio_db.get(include=["embeddings", "metadatas"])
@@ -65,14 +61,9 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     query_vector = None
 
-    print(f"\n=========================================")
     print(f" SEARCHING BY {QUERY_TYPE.upper()}:")
     print(f" '{QUERY_VALUE}'")
-    print(f"=========================================\n")
 
-    # ------------------------------------------
-    # Embed the Query based on the Modality
-    # ------------------------------------------
     if QUERY_TYPE in ["text", "image"]:
         print(f"Loading CLIP model ({MODEL_NAME}) on {device}...")
         model, _, preprocess = open_clip.create_model_and_transforms(
@@ -82,7 +73,6 @@ def main():
         model.eval()
 
         if QUERY_TYPE == "text":
-            # Check if the user passed a .txt file path instead of a raw string
             if os.path.isfile(QUERY_VALUE) and str(QUERY_VALUE).lower().endswith(".txt"):
                 with open(QUERY_VALUE, "r", encoding="utf-8") as f:
                     query_text = f.read().strip()
@@ -96,8 +86,6 @@ def main():
                 query_vector = emb[0].cpu().tolist()
 
         elif QUERY_TYPE == "image":
-            # PIL handles .png, .jpg, .jpeg automatically. 
-            # .convert("RGB") safely removes alpha channels from PNGs.
             image = Image.open(QUERY_VALUE).convert("RGB")
             with torch.no_grad():
                 tensor = preprocess(image).unsqueeze(0).to(device)
@@ -106,24 +94,37 @@ def main():
                 query_vector = emb[0].cpu().tolist()
 
     elif QUERY_TYPE == "audio":
-        print(f"Loading YAMNet and processing Audio...")
+        print(f"Loading Google Perch v2 and processing Audio...")
         import tensorflow_hub as hub
+        import soundfile as sf
+        import tensorflow as tf
         from sklearn.preprocessing import normalize
-        import librosa  # Make sure to run: pip install librosa
+        import librosa 
         
-        # librosa handles .mp3, .wav, .flac natively.
-        # sr=16000 and mono=True forces the exact format YAMNet requires!
-        waveform, _ = librosa.load(QUERY_VALUE, sr=16000, mono=True)
+        audio_array, sample_rate = sf.read(QUERY_VALUE)
+        if audio_array.ndim > 1:
+            audio_array = np.mean(audio_array, axis=1)
+        if sample_rate != 32000:
+            audio_array = librosa.resample(audio_array, orig_sr=sample_rate, target_sr=32000)
+            
+        chunk_samples = 32000 * 5
+        if len(audio_array) < chunk_samples:
+            audio_array = np.pad(audio_array, (0, chunk_samples - len(audio_array)), 'constant')
+        else:
+            audio_array = audio_array[:chunk_samples]
+            
+        waveform = audio_array.astype(np.float32)[np.newaxis, :]
         
-        yamnet = hub.load("https://tfhub.dev/google/yamnet/1")
-        _, embeddings, _ = yamnet(waveform)
+        perch_model = hub.load('https://www.kaggle.com/models/google/bird-vocalization-classifier/tensorFlow2/perch_v2_cpu/1')
+        infer_signature = perch_model.signatures['serving_default']
         
-        yamnet_vector = np.asarray(embeddings).mean(axis=0).astype(np.float32)
-        yamnet_vector = yamnet_vector / np.linalg.norm(yamnet_vector)
+        outputs = infer_signature(inputs=tf.constant(waveform))
+        perch_vector = outputs['embedding'][0].numpy().astype(np.float32)
+        perch_vector = perch_vector / np.linalg.norm(perch_vector)
         
-        print("Projecting Audio into Multimodal Space...")
-        mapper = get_audio_mapper(client)
-        projected = mapper.predict([yamnet_vector])
+        print("Projecting Perch Audio into Multimodal Space...")
+        mapper = get_perch_audio_mapper(client)
+        projected = mapper.predict([perch_vector])
         projected = normalize(projected, norm='l2', axis=1)
         query_vector = projected[0].tolist()
 
@@ -131,9 +132,6 @@ def main():
         print("Invalid QUERY_TYPE. Please choose 'text', 'image', or 'audio'.")
         return
 
-    # ------------------------------------------
-    # Retrieve ALL results and extract actual data
-    # ------------------------------------------
     print(f"\nRetrieving and sorting all {total_docs} records...")
     
     results = collection.query(
@@ -160,9 +158,6 @@ def main():
                 "file_key": meta.get("minio_key") or meta.get("audio_key", doc_id)
             })
 
-    # ------------------------------------------
-    # Print the Results
-    # ------------------------------------------
     for modality in ["text", "image", "audio_projected"]:
         display_name = "AUDIO" if modality == "audio_projected" else modality.upper()
         print(f"--- Top 4 {display_name} Results ---")
@@ -174,9 +169,9 @@ def main():
                 snippet = res["document"].replace("\n", " ").strip()
                 if len(snippet) > 200:
                     snippet = snippet[:197] + "..."
-                print(f"   Description: \"{snippet}\"")
+                print(f"    Description: \"{snippet}\"")
             else:
-                print(f"   File: {res['file_key']}")
+                print(f"    File: {res['file_key']}")
         print("\n")
 
 if __name__ == "__main__":

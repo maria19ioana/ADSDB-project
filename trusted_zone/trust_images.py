@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PIL import Image, ImageOps
 
-from trusted_zone.trusted_zone import (
+from trusted_zone import (
     s3,
     SOURCE_BUCKET,
     TARGET_BUCKET,

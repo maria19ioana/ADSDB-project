@@ -6,7 +6,7 @@ import tempfile
 from pathlib import PurePosixPath
 from pathlib import Path
 
-from formatted_zone.formatted_zone import (
+from formatted_zone import (
     s3, SOURCE_BUCKET, TARGET_BUCKET,
     PERSISTENT_PREFIX, ensure_bucket,
     list_files, target_key, exists

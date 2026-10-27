@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-from trusted_zone.trusted_zone import (
+from trusted_zone import (
     s3,
     SOURCE_BUCKET,
     TARGET_BUCKET,

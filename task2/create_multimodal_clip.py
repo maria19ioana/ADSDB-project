@@ -13,8 +13,8 @@ IMAGE_COLLECTION = "bird_images_clip"
 TEXT_COLLECTION = "bird_texts_openclip"
 MULTIMODAL_COLLECTION = "bird_multimodal_clip"
 
-START_BIRD = 31
-END_BIRD = 46
+START_BIRD = 1
+END_BIRD = 100
 MAX_PER_SPECIES = 5
 EMBEDDING_DIMENSION = 768
 

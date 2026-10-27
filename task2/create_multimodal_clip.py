@@ -1,6 +1,3 @@
-
-"""Combine CLIP image and text embeddings for Task 2."""
-
 from pathlib import Path
 from collections import defaultdict
 
@@ -21,9 +18,8 @@ END_BIRD = 46
 MAX_PER_SPECIES = 5
 EMBEDDING_DIMENSION = 768
 
-
+# Select up to 5 records per species
 def select_records(data, modality):
-    """Select up to 5 records per species."""
 
     selected = []
     counts = defaultdict(int)

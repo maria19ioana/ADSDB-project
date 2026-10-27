@@ -1,13 +1,3 @@
-
-"""Task 2 - Multimodal similarity search using CLIP.
-
-Supports:
-1. Text -> Image similarity search
-2. Image -> Text similarity search
-
-Uses the existing multimodal ChromaDB collection.
-"""
-
 import os
 from io import BytesIO
 from pathlib import Path
@@ -69,7 +59,6 @@ collection = client.get_collection(
 # Generate a normalized CLIP text embedding
 
 def generate_text_embedding(query, model, tokenizer):
-    """Convert a text query into a CLIP embedding."""
 
     tokens = tokenizer([query]).to(DEVICE)
 
@@ -83,7 +72,6 @@ def generate_text_embedding(query, model, tokenizer):
 # Generate a normalized CLIP image embedding
 
 def generate_image_embedding(image_path, model, preprocess):
-    """Convert a local image into a CLIP embedding."""
 
     with Image.open(image_path) as img:
         image = img.convert("RGB")
@@ -100,7 +88,6 @@ def generate_image_embedding(image_path, model, preprocess):
 # Search embeddings by modality
 
 def search_modality(embedding, modality):
-    """Retrieve the most similar items from a given modality."""
 
     return collection.query(
         query_embeddings=[embedding],
@@ -113,7 +100,6 @@ def search_modality(embedding, modality):
 # Read an image from MinIO
 
 def load_image(key):
-    """Download an image from the Trusted Zone."""
 
     response = s3.get_object(
         Bucket=BUCKET,
@@ -128,9 +114,7 @@ def load_image(key):
 # Display images retrieved from a text query
 
 def display_image_results(results):
-    """Show the Top 3 images returned by the search."""
 
-    print("\n========== IMAGE RESULTS ==========")
 
     metadatas = results["metadatas"][0]
     distances = results["distances"][0]
@@ -185,9 +169,7 @@ def display_image_results(results):
 # Display descriptions retrieved from an image query
 
 def display_text_results(results):
-    """Print the Top 3 text descriptions returned by the search."""
 
-    print("\n========== TEXT RESULTS ==========")
 
     metadatas = results["metadatas"][0]
     documents = results["documents"][0]
@@ -218,10 +200,6 @@ def display_text_results(results):
 # Main search application
 
 def main():
-
-    print("===================================")
-    print(" TASK 2 - MULTIMODAL CLIP SEARCH")
-    print("===================================")
 
     print(f"Using device: {DEVICE}")
     print(f"Collection: {COLLECTION_NAME}")
@@ -329,7 +307,6 @@ def main():
                 "text"
             )
 
-            print("\n===== MIXED SEARCH RESULTS =====")
 
             display_image_results(image_results)
             display_text_results(text_results)

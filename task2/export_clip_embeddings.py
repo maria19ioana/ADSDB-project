@@ -1,6 +1,3 @@
-
-"""Export CLIP embeddings and metadata for audio alignment."""
-
 from pathlib import Path
 import csv
 

@@ -1,4 +1,6 @@
 .venv/
+.venv-audio/
+exploitation_chroma/
 .env
 __pycache__/
 *.pyc

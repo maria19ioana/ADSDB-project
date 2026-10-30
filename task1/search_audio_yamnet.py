@@ -37,7 +37,7 @@ def search(xeno_canto_id):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser()
     parser.add_argument("xeno_canto_id")
     args = parser.parse_args()
     search(args.xeno_canto_id)

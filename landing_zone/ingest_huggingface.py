@@ -19,7 +19,7 @@ BUCKET = "landingzone"
 DESTINATION = "temporal_landing"
 
 START_BIRD = 1
-END_BIRD = 100
+END_BIRD = 50
 MAX_FILES_PER_SPECIES = 5  
 
 DOWNLOAD_DIR = Path("hf_downloads")

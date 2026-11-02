@@ -4,7 +4,7 @@ from pathlib import PurePosixPath
 from PIL import Image, ImageOps
 from pillow_heif import register_heif_opener
 
-from formatted_zone.formatted_zone import (
+from formatted_zone import (
     s3,
     SOURCE_BUCKET,
     TARGET_BUCKET,

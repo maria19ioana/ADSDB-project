@@ -6,7 +6,7 @@ import unicodedata
 from collections import Counter
 from pathlib import Path
 
-from trusted_zone.trusted_zone import (
+from trusted_zone import (
     s3,
     SOURCE_BUCKET,
     TARGET_BUCKET,

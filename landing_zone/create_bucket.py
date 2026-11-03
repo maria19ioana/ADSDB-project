@@ -12,6 +12,7 @@ FOLDERS = [
     "persistent_landing/"
 ]
 
+# Connect to MinIO using the environment configuration
 s3 = boto3.client(
     "s3",
     endpoint_url=os.getenv("MINIO_ENDPOINT", "http://127.0.0.1:9000"),

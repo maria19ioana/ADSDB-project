@@ -10,16 +10,17 @@ from PIL import Image
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 import sys
-
-load_dotenv()
+from pathlib import Path
 
 # Configuration
+PROJECT_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(PROJECT_DIR / ".env")
+
 BUCKET = os.getenv("TRUSTED_BUCKET", "trustedzone")
 MODEL_NAME = "ViT-L-14"
 PRETRAINED = "laion2b_s32b_b82k"
 COLLECTION_NAME = "bird_images_clip"
-CHROMA_PATH = "chroma_data"
-
+CHROMA_PATH = PROJECT_DIR / "chroma_data"
 
 # one image key from the ones already embedded
 QUERY_IMAGE_KEY = (
@@ -36,7 +37,7 @@ s3 = boto3.client(
 )
 
 # Connect to ChromaDB
-client = chromadb.PersistentClient(path=CHROMA_PATH)
+client = chromadb.PersistentClient(path=str(CHROMA_PATH))
 collection = client.get_collection(name=COLLECTION_NAME)
 
 
@@ -61,12 +62,14 @@ def load_query_image():
 
     return image, QUERY_IMAGE_KEY
 
-
+# Generate a normalized CLIP image embedding
 def generate_embedding(image, model, preprocess):
     image_tensor = preprocess(image).unsqueeze(0)
 
     with torch.no_grad():
         embedding = model.encode_image(image_tensor)
+
+        # Normalize for cosine similarity
         embedding = embedding / embedding.norm(dim=-1, keepdim=True)
 
     return embedding.squeeze(0).cpu().tolist()
@@ -89,6 +92,7 @@ def visualize_results(query_image, results):
         species = metadata["species"].split(".", 1)[-1]
         species = species.replace("_", " ")
 
+        # Convert cosine distance to similarity
         similarity = 1 - distance
 
         axes[i].imshow(image)
@@ -99,12 +103,20 @@ def visualize_results(query_image, results):
         )
         axes[i].axis("off")
 
+    # Hide unused axes
+    for ax in axes[len(results) + 1:]:
+        ax.axis("off")
+
     plt.tight_layout()
     plt.savefig("similarity_results.png", dpi=150)
     plt.show()
 
 
 def main():
+
+    if collection.count() == 0:
+        raise RuntimeError("CLIP collection is empty")
+    
     print("Loading CLIP model...")
     model, _, preprocess = open_clip.create_model_and_transforms(
         MODEL_NAME,
@@ -117,16 +129,20 @@ def main():
     query_embedding = generate_embedding(image, model, preprocess)
 
     print("Searching similar images...")
+
+    # Search for the most similar images
     results = collection.query(
         query_embeddings=[query_embedding],
-        n_results=6  
+        n_results=min(6, collection.count()),
+        include=["metadatas", "distances"]
     )
 
+    # Identify the query image so it can be excluded from the results
     query_id = (
-    hashlib.sha256(query_key.encode("utf-8")).hexdigest()
-    if query_key is not None
-    else None
-)
+        hashlib.sha256(query_key.encode("utf-8")).hexdigest()
+        if query_key is not None
+        else None
+    )
 
     print("\nTop similar images:\n")
 

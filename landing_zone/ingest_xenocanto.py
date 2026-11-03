@@ -64,6 +64,7 @@ def get_recordings(species_name):
     url = "https://xeno-canto.org/api/3/recordings"
     candidates = []
 
+    # Try different spellings for species names with multiple words
     words = species_name.split()
 
     search_names = [species_name]
@@ -115,7 +116,8 @@ def get_recordings(species_name):
 
         if candidates:
             break
-
+        
+    # Make sure the recordings belong to the same scientific species
     scientific_names = {
         (
             normalize(r.get("gen")),
@@ -237,8 +239,11 @@ def main():
 
     species = get_species()
     print(f"Found {len(species)} species in MinIO")
+    if not species:
+        raise RuntimeError("No bird species found in MinIO")
 
     total = 0
+    failed = 0
 
     for folder, name in species:
         print(f"\nSearching: {name}")
@@ -253,13 +258,21 @@ def main():
                     total += 1
                 except Exception as error:
                     print("  Upload failed:", error)
+                    failed += 1
 
         except Exception as error:
             print("  Search failed:", error)
+            failed += 1
 
         time.sleep(2)
 
     print(f"\nFinished! {total} recordings processed.")
+    print(f"Failed operations: {failed}")
+
+    if failed > 0:
+        raise RuntimeError(
+            f"Xeno-canto ingestion finished with {failed} failed operations"
+        )
 
 
 if __name__ == "__main__":

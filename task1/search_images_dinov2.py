@@ -15,7 +15,7 @@ from transformers import AutoImageProcessor, AutoModel
 import matplotlib.pyplot as plt
 
 # Configuration
-PROJECT_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(PROJECT_DIR / ".env")
 
 BUCKET = os.getenv("TRUSTED_BUCKET", "trustedzone")
@@ -87,6 +87,7 @@ def generate_embedding(image, model, processor):
         # Use the CLS token as the image representation
         embedding = outputs.last_hidden_state[:, 0, :]
 
+        # Normalize for cosine similarity
         embedding = F.normalize(embedding, dim=-1)
 
     return embedding.squeeze(0).cpu().tolist()
@@ -110,6 +111,7 @@ def visualize_results(query_image, results):
         species = metadata["species"].split(".", 1)[-1]
         species = species.replace("_", " ")
 
+        # Convert cosine distance to similarity
         similarity = 1 - distance
 
         axes[i].imshow(image)
@@ -131,6 +133,9 @@ def visualize_results(query_image, results):
 
 def main():
 
+    if collection.count() == 0:
+        raise RuntimeError("DINOv2 collection is empty")
+
     print("Loading DINOv2 model...")
     print(f"Using device: {DEVICE}")
 
@@ -144,12 +149,14 @@ def main():
 
     print("Searching similar images...")
 
+    # Retrieve the nearest image embeddings using cosine distance
     results = collection.query(
         query_embeddings=[query_embedding],
         n_results=min(6, collection.count()),
         include=["metadatas", "distances"]
     )
 
+    # Identify the query image so it can be excluded from the results
     query_id = (
         hashlib.sha256(query_key.encode("utf-8")).hexdigest()
         if query_key is not None

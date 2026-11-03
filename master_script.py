@@ -27,7 +27,7 @@ PIPELINE_SCRIPTS = [
     "exploitation_zone/embed_text_bge.py",
     "exploitation_zone/embed_text_clip.py",
     "exploitation_zone/embed_audio_perch.py",
-    "exploitation_zone/exploit_audio_yamnet.py"
+    "exploitation_zone/exploit_audio_yamnet.py",
 
     # Task 2 collections
     "task2/create_multimodal_clip.py",

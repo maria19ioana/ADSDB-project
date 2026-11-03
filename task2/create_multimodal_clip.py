@@ -65,6 +65,7 @@ def select_records(data, modality):
         ) != "laion2b_s32b_b82k":
             raise ValueError("Unexpected text checkpoint.")
 
+        # Label each embedding with its modality
         new_metadata = dict(metadata)
         new_metadata["modality"] = modality
 
@@ -136,6 +137,7 @@ def main():
         configuration={"hnsw": {"space": "cosine"}}
     )
 
+    # Store image and text embeddings in the same collection
     for modality_records in [image_records, text_records]:
 
         ids, embeddings, metadatas, documents = zip(

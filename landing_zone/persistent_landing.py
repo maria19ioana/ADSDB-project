@@ -20,7 +20,7 @@ s3 = boto3.client(
     aws_secret_access_key=os.getenv("MINIO_SECRET_KEY", "minioadmin")
 )
 
-
+# Identify the source and format based on the Temporal Landing path
 def get_source_and_format(key):
 
     if key.startswith(TEMPORAL + "images/"):
@@ -52,6 +52,7 @@ def make_destination(key, timestamp):
     filename = parts[-1]
     subfolders = parts[:-1]
 
+    # Add the source and timestamp to the original filename
     new_filename = f"{source}_{timestamp}_{filename}"
 
     destination_parts = [
@@ -64,7 +65,7 @@ def make_destination(key, timestamp):
 
     return "/".join(destination_parts)
 
-
+# List all files from Temporal Landing, ignoring folder markers
 def list_temporal_files():
 
     paginator = s3.get_paginator("list_objects_v2")
@@ -81,7 +82,7 @@ def list_temporal_files():
 
             yield obj
 
-
+# Get the files already stored in Persistent Landing
 def get_existing_destinations():
 
     existing = set()
@@ -96,6 +97,7 @@ def get_existing_destinations():
             existing.add(obj["Key"])
 
     return existing
+
 
 # Find the original Temporal Landing path
 def original_key_from_destination(key):
@@ -112,6 +114,7 @@ def original_key_from_destination(key):
 
     filename = remaining[-1]
 
+    # Remove the source and timestamp to recover the original filename
     pattern = rf"^{re.escape(source)}_\d{{8}}T\d{{6}}Z_"
 
     original_filename = re.sub(pattern, "", filename)
@@ -133,6 +136,7 @@ def main():
 
     existing = get_existing_destinations()
 
+    # Recover original paths to avoid copying files already transferred
     transferred = {
         original_key_from_destination(key)
         for key in existing
@@ -191,7 +195,9 @@ def main():
     if failed == 0:
         print("\nPersistent Landing transfer finished!")
     else:
-        print("\nSome files failed. Review errors above")
+        raise RuntimeError(
+            f"Persistent Landing transfer failed for {failed} files"
+        )
 
 
 if __name__ == "__main__":

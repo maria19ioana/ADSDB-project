@@ -1,9 +1,11 @@
+
 import os
 import re
 import zipfile
 from pathlib import Path
-from dotenv import load_dotenv
+
 import boto3
+from dotenv import load_dotenv
 from huggingface_hub import hf_hub_download
 
 load_dotenv()
@@ -20,7 +22,7 @@ DESTINATION = "temporal_landing"
 
 START_BIRD = 1
 END_BIRD = 50
-MAX_FILES_PER_SPECIES = 5  
+MAX_FILES_PER_SPECIES = 5
 
 DOWNLOAD_DIR = Path("hf_downloads")
 
@@ -37,12 +39,12 @@ try:
     print("Connected to MinIO successfully!")
 except Exception as error:
     raise RuntimeError(
-        "Cannot access the landingzone bucket "
-        "Check Docker, MinIO, and your credentials"
+        "Cannot access the landingzone bucket. "
+        "Check Docker, MinIO, and your credentials."
     ) from error
 
 
-# Find bird species in the ZIP archive
+# Find the species folder in a ZIP file path
 def get_species_folder(zip_path):
     parts = Path(zip_path).parts
 
@@ -57,7 +59,8 @@ def get_species_folder(zip_path):
 
     return None
 
-# Download ZIP and upload selected files to MinIO
+
+# Download an archive and upload the selected files to MinIO
 def process_archive(archive_name, destination_folder):
 
     print(f"\nDownloading {archive_name}...")
@@ -73,7 +76,7 @@ def process_archive(archive_name, destination_folder):
 
     uploaded = 0
     species_found = set()
-    species_file_count = {}  
+    species_file_count = {}
 
     with zipfile.ZipFile(archive_path, "r") as archive:
 
@@ -90,17 +93,22 @@ def process_archive(archive_name, destination_folder):
             parts = Path(member.filename).parts
             species_name = parts[species_index]
 
+            # Keep only a limited number of files per species
             current_count = species_file_count.get(species_name, 0)
+
             if current_count >= MAX_FILES_PER_SPECIES:
                 continue
 
             relative_path = "/".join(parts[species_index:])
-            species_found.add(species_name)
 
             object_key = f"{DESTINATION}/{destination_folder}/{relative_path}"
 
-            print(f"Uploading: {object_key} ({current_count + 1}/{MAX_FILES_PER_SPECIES})")
+            print(
+                f"Uploading: {object_key} "
+                f"({current_count + 1}/{MAX_FILES_PER_SPECIES})"
+            )
 
+            # Upload directly from the ZIP without extracting all files
             with archive.open(member) as file_data:
                 s3.upload_fileobj(
                     Fileobj=file_data,
@@ -110,41 +118,47 @@ def process_archive(archive_name, destination_folder):
 
             uploaded += 1
             species_file_count[species_name] = current_count + 1
+            species_found.add(species_name)
 
-    print(f"\nCompleted {archive_name}")
     print(f"Total files uploaded: {uploaded}")
     print(f"Species found: {len(species_found)}")
 
     if uploaded == 0:
         raise RuntimeError(
-            f"No matching files found in {archive_name} "
-            "Check the archive's internal structure"
+            f"No matching files found in {archive_name}. "
+            "Check the archive's internal structure."
         )
 
     return uploaded, species_found
 
 
+def main():
+    image_count, image_species = process_archive("images.zip", "images")
+    text_count, text_species = process_archive("text.zip", "text")
 
-image_count, image_species = process_archive("images.zip","images")
-text_count, text_species = process_archive("text.zip","text")
+    print(f"\nImage files uploaded: {image_count}")
+    print(f"Text files uploaded: {text_count}")
+    print(f"Image species found: {len(image_species)}")
+    print(f"Text species found: {len(text_species)}")
+
+    expected_count = END_BIRD - START_BIRD + 1
+
+    if (
+        len(image_species) == expected_count
+        and len(text_species) == expected_count
+    ):
+        print(
+            f"SUCCESS: All {expected_count} bird species "
+            "found in both archives!"
+        )
+    else:
+        print("WARNING: Some species folders were not found")
+        print("Image species:", sorted(image_species))
+        print("Text species:", sorted(text_species))
+
+    print(f"\nMinIO destination: {BUCKET}/{DESTINATION}/")
+    print("Upload process finished!")
 
 
-print(f"\nImage files uploaded: {image_count}")
-print(f"Text files uploaded: {text_count}")
-print(f"Image species found: {len(image_species)}")
-print(f"Text species found: {len(text_species)}")
-
-expected_count = END_BIRD - START_BIRD + 1
-
-if (
-    len(image_species) == expected_count
-    and len(text_species) == expected_count
-):
-    print(f"SUCCESS: All {expected_count} bird species found in both archives!")
-else:
-    print("WARNING: Some species folders were not found")
-    print("Image species:", sorted(image_species))
-    print("Text species:", sorted(text_species))
-
-print(f"\nMinIO destination: {BUCKET}/{DESTINATION}/")
-print("Upload process finished!")
+if __name__ == "__main__":
+    main()

@@ -1,3 +1,5 @@
+"""Task 3: retrieve texts, images and audio from an audio query before running the notebook."""
+
 import argparse
 import os
 import json
@@ -20,6 +22,7 @@ load_dotenv(PROJECT_DIR / ".env")
 DB_PATH = PROJECT_DIR / "chroma_data"
 COLLECTION_NAME = "bird_multimodal_clip"  
 
+# Give each run its own folder so we can compare queries 
 RUN_ID = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
 OUTPUT_DIR = PROJECT_DIR / "task3" / "audio_rag_output" / RUN_ID
 
@@ -53,7 +56,7 @@ import librosa
 from sklearn.linear_model import Ridge
 from sklearn.preprocessing import normalize
 
-# Prepare the recording as in Task 2: mono, 32 kHz and 5 seconds.
+# Use the same input format as the Perch indexing step from Task 2 (mono, 32 kHz and 5 seconds)
 audio, rate = sf.read(QUERY_AUDIO)
 if audio.ndim > 1:
     audio = audio.mean(axis=1)
@@ -61,6 +64,7 @@ if not len(audio) or not np.isfinite(audio).all():
     raise ValueError("The input audio is empty or contains invalid samples")
 if rate != 32000:
     audio = librosa.resample(audio, orig_sr=rate, target_sr=32000)
+# Shorter recordings are filled out with silence
 audio = audio[:160000]
 audio = np.pad(audio, (0, 160000 - len(audio))).astype(np.float32)
 
@@ -68,14 +72,15 @@ PERCH_MODEL = "https://www.kaggle.com/models/google/bird-vocalization-classifier
 print("Loading Perch v2...", flush=True)
 model = hub.load(PERCH_MODEL)
 outputs = model.signatures["serving_default"](inputs=tf.constant(audio[np.newaxis, :]))
+# Convert the audio vector so it can be compared with the CLIP vectors
 audio_vector = outputs["embedding"][0].numpy().astype(np.float32)
 
 def species_key(name):
-    # Match names starting with number and without
+    # CUB names can have a numeric prefix, we remove it so the same species can be matched 
     return re.sub(r"^\d+\W*", "", name or "").strip().lower()
 
 def get_perch_audio_mapper(client):
-    """Dynamically trains the W matrix to project Perch Audio into CLIP space."""
+    #Fit a Perch-to-CLIP projection using species present in both collections
     audio_db = client.get_collection("bird_audio_perch")
     mm_db = client.get_collection(COLLECTION_NAME)
     
@@ -88,15 +93,18 @@ def get_perch_audio_mapper(client):
         
     clip_by_sp = {}
     for i, m in enumerate(mm_data["metadatas"]):
+        # Only original CLIP records are targets
         if m.get("modality") in ("text", "image"):
             clip_by_sp.setdefault(species_key(m["species"]), []).append(mm_data["embeddings"][i])
 
+    # For each species average its audio vectors and its image/text vectors
     X_train, Y_train = [], []
     for sp in audio_by_sp:
         if sp in clip_by_sp:
             X_train.append(np.mean(audio_by_sp[sp], axis=0))
             Y_train.append(np.mean(clip_by_sp[sp], axis=0))
             
+    # Fit the projection keeping the external query out of training
     mapper = Ridge(alpha=1.0, fit_intercept=False)
     if not X_train:
         raise ValueError("No species shared by the Perch and original CLIP records")
@@ -111,6 +119,7 @@ query_vector = normalize(mapper.predict([audio_vector]), norm="l2", axis=1)[0].t
 print("Searching ChromaDB...", flush=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Retrieve the full ranking so each modality can contribute its own top three
 results = collection.query(
     query_embeddings=[query_vector],
     n_results=collection.count(),
@@ -182,6 +191,7 @@ for record_id, metadata, document, distance in zip(
 
     retrieved[modality].append(item)
 
+# Save the retrieved evidence for the notebook
 rag_context = {
     "query": QUERY,
     "query_type": "audio",
@@ -217,6 +227,7 @@ for modality, items in retrieved.items():
 
         print("-" * 40)
 
+# Create a ZIP with the results
 zip_path = shutil.make_archive(
     str(OUTPUT_DIR),
     "zip",

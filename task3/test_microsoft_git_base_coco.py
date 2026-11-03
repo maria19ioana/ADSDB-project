@@ -1,3 +1,5 @@
+"""Task 3: test Microsoft GIT by generating descriptions for three images."""
+
 import argparse
 from io import BytesIO
 import os
@@ -27,6 +29,7 @@ def select_images(s3, bucket, seed):
     if len(keys) < 3:
         raise RuntimeError(f"Expected at least 3 Trusted Zone images; found {len(keys)}")
 
+    # Sort the images so the same seed selects the same three each time
     return random.Random(seed).sample(sorted(keys), 3)
 
 
@@ -45,7 +48,9 @@ def generate_captions(s3, bucket, selected):
             body.close()
         with Image.open(BytesIO(raw)) as source:
             image = source.convert("RGB")
+        # GIT generates a caption from the image alone (no question or retrieved context is supplied)
         inputs = processor(images=image, return_tensors="pt").to(device)
+        # Generate the description without random sampling.
         with torch.inference_mode():
             tokens = model.generate(**inputs, max_new_tokens=50, do_sample=False, num_beams=1)
         caption = processor.batch_decode(tokens, skip_special_tokens=True)[0].strip()

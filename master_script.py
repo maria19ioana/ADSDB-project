@@ -20,14 +20,17 @@ PIPELINE_SCRIPTS = [
     "trusted_zone/trust_images.py",
     "trusted_zone/trust_audio.py",
     "trusted_zone/trust_text.py",
+
+    #4. QUALITY ANALISIS
+    "quality_analysis_scripts/quality_analysis.py",
     
-    # 4. EXPLOITATION ZONE
+    # 5. EXPLOITATION ZONE
     "exploitation_zone/embed_images.py",
     "exploitation_zone/embed_images_dinov2.py",
     "exploitation_zone/embed_text_bge.py",
     "exploitation_zone/embed_text_clip.py",
     "exploitation_zone/embed_audio_perch.py",
-    "exploitation_zone/exploit_audio_yamnet.py"
+    "exploitation_zone/exploit_audio_yamnet.py",
 
     # Task 2 collections
     "task2/create_multimodal_clip.py",

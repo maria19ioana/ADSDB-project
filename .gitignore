@@ -1,12 +1,28 @@
-.venv/
-.venv-audio/
-exploitation_chroma/
+# Virtual environments
+.venv*/
+
+# Credentials
 .env
+
+# Python cache
 __pycache__/
 *.pyc
+
+# Local data and databases
 hf_downloads/
-.DS_Store
+exploitation_chroma/
 exploitation_zone/chroma_data/
+chroma_data/
+chroma_data_backup/
+chroma_db/
+
+# Generated files
+similarity_results*.png
+*.wav
+
+# Local test images
 YellowbelliedFlycatcher*.jpg
 parrot*.jpg
-chroma_data/
+
+# System files
+.DS_Store

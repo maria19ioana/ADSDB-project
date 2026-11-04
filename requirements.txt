@@ -1,0 +1,38 @@
+
+# Data storage and configuration
+boto3
+python-dotenv
+
+# Data processing and quality analysis
+numpy
+pandas
+Pillow
+pillow-heif
+matplotlib
+scikit-learn
+
+# Embeddings and similarity search
+torch
+torchvision
+transformers
+sentence-transformers
+open-clip-torch
+chromadb
+timm
+huggingface-hub
+
+# Audio processing
+librosa
+soundfile
+tensorflow==2.20.0
+tensorflow-hub==0.16.1
+tf-keras==2.20.1
+setuptools==80.9.0
+
+# Operations and testing
+psutil
+pytest
+
+# Other utilities
+requests
+tqdm

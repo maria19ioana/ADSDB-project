@@ -18,7 +18,7 @@ from sentence_transformers import SentenceTransformer
 
 # Locate the existing ChromaDB database
 PROJECT_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = PROJECT_DIR / "chroma_db"
+DB_PATH = PROJECT_DIR / "chroma_data"
 
 # Use the same model as the embedding pipeline
 MODEL_NAME = "BAAI/bge-small-en-v1.5"

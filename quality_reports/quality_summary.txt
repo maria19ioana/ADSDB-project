@@ -2,46 +2,80 @@ TRUSTED ZONE QUALITY ANALYSIS
 ========================================
 
 DATASET OVERVIEW
-Images inspected: 948
-Texts inspected: 948
-Audio inspected: 70
-Species represented: 16
+Images inspected: 250
+Texts inspected: 250
+Audio inspected: 195
+Species represented: 50
 
 IMAGE QUALITY
-mean_width: 457.36
-mean_height: 398.63
-mean_aspect_ratio: 1.20
-mean_size_kb: 91.08
+mean_width: 454.80
+mean_height: 386.77
+mean_aspect_ratio: 1.22
+mean_size_kb: 89.50
 
 TEXT QUALITY
-mean_words: 151.94
-median_words: 150.00
-original_chars: 736803.00
-cleaned_chars: 735855.00
-removed_chars: 948.00
+mean_words: 151.05
+median_words: 148.00
+original_chars: 193172.00
+cleaned_chars: 192922.00
+removed_chars: 250.00
 
 AUDIO QUALITY
-mean_duration: 95.43
-median_duration: 49.85
-mean_rms: 0.03
-mean_silence_ratio: 0.67
-mostly_silent_count: 20.00
+mean_duration: 74.29
+median_duration: 40.75
+mean_rms: 0.04
+mean_silence_ratio: 0.63
+mostly_silent_count: 47.00
 
 SPECIES COVERAGE
                       species  images  texts  audio
-      031.Black_billed_Cuckoo      60     60      5
-          032.Mangrove_Cuckoo      53     53      5
-     033.Yellow_billed_Cuckoo      59     59      5
-  034.Gray_crowned_Rosy_Finch      59     59      0
-             035.Purple_Finch      60     60      5
-         036.Northern_Flicker      60     60      5
-       037.Acadian_Flycatcher      59     59      5
- 038.Great_Crested_Flycatcher      60     60      5
-         039.Least_Flycatcher      59     59      5
-   040.Olive_sided_Flycatcher      60     60      5
-041.Scissor_tailed_Flycatcher      60     60      5
-     042.Vermilion_Flycatcher      60     60      5
-043.Yellow_bellied_Flycatcher      59     59      5
-              044.Frigatebird      60     60      0
-          045.Northern_Fulmar      60     60      5
-                  046.Gadwall      60     60      5
+   001.Black_footed_Albatross       5      5      5
+         002.Laysan_Albatross       5      5      5
+          003.Sooty_Albatross       5      5      0
+        004.Groove_billed_Ani       5      5      5
+           005.Crested_Auklet       5      5      3
+             006.Least_Auklet       5      5      5
+          007.Parakeet_Auklet       5      5      5
+        008.Rhinoceros_Auklet       5      5      1
+         009.Brewer_Blackbird       5      5      0
+     010.Red_winged_Blackbird       5      5      5
+          011.Rusty_Blackbird       5      5      5
+  012.Yellow_headed_Blackbird       5      5      5
+                 013.Bobolink       5      5      5
+           014.Indigo_Bunting       5      5      5
+           015.Lazuli_Bunting       5      5      5
+          016.Painted_Bunting       5      5      5
+                 017.Cardinal       5      5      0
+          018.Spotted_Catbird       5      5      5
+             019.Gray_Catbird       5      5      0
+     020.Yellow_breasted_Chat       5      5      5
+           021.Eastern_Towhee       5      5      5
+         022.Chuck_will_Widow       5      5      0
+         023.Brandt_Cormorant       5      5      0
+      024.Red_faced_Cormorant       5      5      2
+        025.Pelagic_Cormorant       5      5      4
+          026.Bronzed_Cowbird       5      5      5
+            027.Shiny_Cowbird       5      5      5
+            028.Brown_Creeper       5      5      5
+            029.American_Crow       5      5      5
+                030.Fish_Crow       5      5      5
+      031.Black_billed_Cuckoo       5      5      5
+          032.Mangrove_Cuckoo       5      5      5
+     033.Yellow_billed_Cuckoo       5      5      5
+  034.Gray_crowned_Rosy_Finch       5      5      0
+             035.Purple_Finch       5      5      5
+         036.Northern_Flicker       5      5      5
+       037.Acadian_Flycatcher       5      5      5
+ 038.Great_Crested_Flycatcher       5      5      5
+         039.Least_Flycatcher       5      5      5
+   040.Olive_sided_Flycatcher       5      5      5
+041.Scissor_tailed_Flycatcher       5      5      5
+     042.Vermilion_Flycatcher       5      5      5
+043.Yellow_bellied_Flycatcher       5      5      5
+              044.Frigatebird       5      5      0
+          045.Northern_Fulmar       5      5      5
+                  046.Gadwall       5      5      5
+       047.American_Goldfinch       5      5      5
+       048.European_Goldfinch       5      5      5
+      049.Boat_tailed_Grackle       5      5      5
+              050.Eared_Grebe       5      5      0

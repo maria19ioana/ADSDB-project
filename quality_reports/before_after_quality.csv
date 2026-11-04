@@ -1,4 +1,4 @@
 modality,formatted_files_inspected,trusted_files_accepted,excluded_files,processing_errors,cleaned_files,flagged_files,acceptance_percentage
-Images,948,948,0,0,0,0,100.0
-Text,948,948,0,0,948,0,100.0
-Audio,70,70,0,0,0,20,100.0
+Images,250,250,0,0,0,0,100.0
+Text,250,250,0,0,250,0,100.0
+Audio,195,195,0,0,0,47,100.0

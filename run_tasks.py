@@ -36,21 +36,19 @@ def menu():
         print("TASK 1: Same-Modality Similarity Search")
         print("  1. Text Search (BGE)")
         print("  2. Image Search (CLIP)")
-        print("  3. Audio Search (YAMNet - requires Xeno-Canto ID)")
-        print("  4. Image Search (DINOv2)")
+        print("  3. Image Search (DINOv2)")
+        print("  4. Audio Search (YAMNet - requires Xeno-Canto ID)")
+        print("  5. Audio Search (Google Perch - requires file path)")
+        
         
         print("\nTASK 2: Multi-Modality Similarity Search")
-        print("  5. Cross-Modal Search (Text/Image/Audio in CLIP space)")
+        print("  6. Cross-Modal Search (Text/Image/Audio in CLIP space)")
         
-        print("\nTASK 3: Generative Tasks with External Models")
-        print("  6. Image Captioning Testing (microsoft/git-base-coco)")
-        print("  7. Visual Question Answering Testing (BLIP-VQA)")
-        print("  8. Retrieval-Augmented Generation (RAG) - Multimodal Context")
-        print("  9. Audio RAG Retrieval (Perch Audio -> Multimodal Space)")
+        #print("  7. Image Captioning Testing (microsoft/git-base-coco)")
         
         print("\n0. Exit")
         
-        choice = input("\nSelect an option (0-9): ").strip()
+        choice = input("\nSelect an option (0-6): ").strip()
         
         if choice == "0":
             print("Exiting tasks menu.")
@@ -63,20 +61,27 @@ def menu():
             img_path = input("Enter absolute path for query image: ").strip()
             args = [img_path] if img_path else []
             run_script("task1/search_images.py", args)
-            
+
         elif choice == "3":
+                    img_path = input("Enter absolute path for query image: ").strip()
+                    args = [img_path] if img_path else []
+                    run_script("task1/search_images_dinov2.py", args)
+            
+        elif choice == "4":
             xc_id = input("Enter Xeno-Canto ID (e.g., 975331): ").strip()
             if xc_id:
                 run_script("task1/search_audio_yamnet.py", [xc_id])
             else:
                 print("Invalid ID. Cancelled.")
-                
-        elif choice == "4":
-            img_path = input("Enter absolute path for query image: ").strip()
-            args = [img_path] if img_path else []
-            run_script("task1/search_images_dinov2.py", args)
-            
+
         elif choice == "5":
+            audio_path = input("Enter absolute path for query audio (.wav): ").strip().strip('"')
+            if audio_path:
+                run_script("task1/search_audio_perch.py", [audio_path])
+            else:
+                print("Path cannot be empty.")
+            
+        elif choice == "6":
             q_type = input("Enter query type (text, image, audio): ").strip().lower()
             if q_type not in ["text", "image", "audio"]:
                 print("Invalid type. Please type 'text', 'image', or 'audio'.")
@@ -88,10 +93,10 @@ def menu():
             else:
                 print("Query cannot be empty.")
             
-        elif choice == "6":
-            seed = input("Enter a seed for random image selection (or press Enter for random): ").strip()
-            args = ["--seed", seed] if seed else []
-            run_script("task3/test_microsoft_git_base_coco.py", args)
+        #elif choice == "7":
+        #    seed = input("Enter a seed for random image selection (or press Enter for random): ").strip()
+        #    args = ["--seed", seed] if seed else []
+        #    run_script("task3/test_microsoft_git_base_coco.py", args)
             
         else:
             print("Invalid option. Please try again.")

@@ -1,7 +1,7 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-
+import sys
 import chromadb
 import numpy as np
 import soundfile as sf
@@ -18,7 +18,7 @@ CHROMA_PATH = Path(__file__).resolve().parent.parent / "chroma_data"
 chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
 audio_collection = chroma_client.get_collection(name="bird_audio_perch")
 
-new_audio_path = r"C:\Users\ivani\Desktop\UPC\ADSDB\ADSDB-fresh-clone\XC975331 - Northern Flicker - Colaptes auratus.wav"
+new_audio_path = sys.argv[1].strip('"')
 audio_array, sample_rate = sf.read(new_audio_path)
 
 if audio_array.ndim > 1:
@@ -59,5 +59,5 @@ for i in range(5):
     match_species = results['metadatas'][0][i]['species']
     
     print(f"Rank {i+1}: {match_id}")
-    print(f"    -> Species: {match_species}")
-    print(f"    -> Distance: {match_dist:.4f}\n")
+    print(f"-> Species: {match_species}")
+    print(f"-> Distance: {match_dist:.4f}\n")

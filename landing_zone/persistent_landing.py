@@ -193,7 +193,23 @@ def main():
     print("Failed:", failed)
 
     if failed == 0:
+        # Only delete if there were no failures
+        if copied > 0 or skipped > 0:
+            print("\nCleaning up temporal landing")
+            deleted = 0
+            for obj in list_temporal_files():
+                source_key = obj["Key"]
+                try:
+                    s3.delete_object(Bucket=BUCKET, Key=source_key)
+                    print("DELETED TEMPORAL:", source_key)
+                    deleted += 1
+                except Exception as e:
+                    print(f"FAILED TO DELETE {source_key}: {e}")
+            
+            print(f"Cleanup complete. Deleted {deleted} temporal files.")
+
         print("\nPersistent Landing transfer finished!")
+        
     else:
         raise RuntimeError(
             f"Persistent Landing transfer failed for {failed} files"

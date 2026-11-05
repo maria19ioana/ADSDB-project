@@ -51,7 +51,8 @@ Select an option (0-6):
 | 0 | Exit the menu. |
 
 For **YAMNet (option 4)**, open MinIO at `http://localhost:9001` and browse to `trustedzone/xeno_canto/audio/`. Pick a recording and copy `xeno_canto_id` from its JSON metadata, or take the digits after `XC` in its WAV filename. 
-For **options 2 & 3, open MinIO at  `http://localhost:9001` and browse to `trustedzone/huggingface_cub200/images/`. Pick an image and copy the path within the bucket  `huggingface_cub200/images/...`
+
+For **options 2 & 3**, open MinIO at  `http://localhost:9001` and browse to `trustedzone/huggingface_cub200/images/`. Pick an image and copy the path within the bucket  `huggingface_cub200/images/...`
 
 ## Run Task 3
 
